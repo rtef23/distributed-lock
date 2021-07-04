@@ -1,4 +1,4 @@
-package com.igor.user.core.config;
+package personal.toy.config;
 
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
-@EntityScan("com.igor.user.core.domain")
-@EnableJpaRepositories("com.igor.user.core.infrastructure")
 public class JpaConfig {
   @Bean
   public SpringPhysicalNamingStrategy namingStrategy() {

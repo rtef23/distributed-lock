@@ -1,2 +1,8 @@
-package personal.toy.application;public interface LockService {
+package personal.toy.application;
+
+import java.time.Duration;
+
+public interface LockService {
+
+  void executeWithLock(String lockKey, Duration second, Runnable consumer);
 }
