@@ -1,30 +1,33 @@
 package personal.toy.application;
 
+import java.time.Duration;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import personal.toy.domain.Test;
-import personal.toy.infrastructure.TestRepository;
+import personal.toy.application.lock.service.LockService;
 import personal.toy.presentation.dto.TestDto;
 
 @Service
 @RequiredArgsConstructor
 public class ToyService {
 
-  private final TestRepository testRepository;
+  private final LockService lockService;
+  private final TestService testService;
 
   @PersistenceContext
   private EntityManager entityManager;
 
-  //  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Transactional
-  public void test(long id, TestDto testDto) {
-    Test test = testRepository.findById(id).orElseThrow(IllegalStateException::new);
-
-    test.addValue(testDto.getValue());
-
-    entityManager.flush();
+  public void testDistributedLock(long id, TestDto testDto) {
+    lockService.executeWithLock("TESTS:" + id, Duration.ofSeconds(3),
+        () ->
+            testService.test(id, testDto),
+        () ->
+            entityManager.flush(),
+        () ->
+            entityManager.clear()
+    );
   }
 }

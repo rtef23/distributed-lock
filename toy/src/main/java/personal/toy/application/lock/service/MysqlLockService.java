@@ -1,13 +1,15 @@
-package personal.toy.application;
+package personal.toy.application.lock.service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import personal.toy.application.lock.exception.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
@@ -19,12 +21,25 @@ public class MysqlLockService implements LockService {
   private final DataSource dataSource;
 
   @Override
-  public void executeWithLock(String lockKey, Duration duration, Runnable runnable) {
+  public void executeWithLock(String lockKey, Duration duration, Runnable runnable,
+      Runnable onSuccess, Runnable onError) {
     try (Connection connection = dataSource.getConnection()) {
+      acquireLock(connection, lockKey, duration);
+
       try {
-        acquireLock(connection, lockKey, duration);
+        Instant start = Instant.now();
 
         runnable.run();
+
+        Instant finish = Instant.now();
+
+        if (Duration.between(start, finish).toSeconds() >= duration.toSeconds()) {
+          throw new TimeoutException();
+        }
+
+        onSuccess.run();
+      } catch (TimeoutException timeoutException) {
+        onError.run();
       } finally {
         releaseLock(connection, lockKey);
       }
@@ -82,10 +97,6 @@ public class MysqlLockService implements LockService {
         ResultSet resultSet = preparedStatement.executeQuery();
     ) {
       if (!resultSet.next()) {
-        throw new IllegalStateException("release lock failed. lockKey : " + lockKey);
-      }
-
-      if (resultSet.getInt(1) != 1) {
         throw new IllegalStateException("release lock failed. lockKey : " + lockKey);
       }
     }

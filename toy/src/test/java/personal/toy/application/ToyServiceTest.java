@@ -23,7 +23,7 @@ class ToyServiceTest {
     RestTemplate restTemplate = new RestTemplateBuilder()
         .build();
 
-    List<String> responseTexts = IntStream.range(0, 100)
+    List<String> responseTexts = IntStream.range(0, 10)
         .parallel()
         .mapToObj(number -> {
           long id = 1;
